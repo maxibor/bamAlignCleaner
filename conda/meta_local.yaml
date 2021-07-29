@@ -1,0 +1,30 @@
+package:
+  name: bamaligncleaner
+
+source:
+  path: ../
+
+build:
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+    - click >=7.0
+    - bioconda::pysam >=0.15.2
+    
+test:
+  imports:
+    - bamaligncleaner
+
+
+about:
+  home: https://github.com/maxibor/bamaligncleaner
+  license: GPL-3.0
+  summary: 'Removes unaligned references in BAM alignment file'
+
+# Build using: conda build -c conda-forge .

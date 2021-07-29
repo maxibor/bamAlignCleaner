@@ -1,0 +1,39 @@
+name: bamAlignCleaner-CI
+
+on: [push, pull_request]
+
+
+jobs:
+  sam2lca_ci:
+    name: sam2lca_ci
+    runs-on: 'ubuntu-latest'
+    if: "!contains(github.event.head_commit.message, '[skip_ci]')"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.7
+          mamba-version: "*"
+          channels: conda-forge,bioconda,defaults
+          channel-priority: true
+          environment-file: environment.yml
+          activate-environment: bamAlignCleaner
+      - name: Lint with flake8
+        shell: bash -l {0}
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Test with pytest
+        shell: bash -l {0}
+        run: |
+          pip install -e .
+          pip install pytest
+          # pytest
+      - name: Check bamAlignCleaner help message
+        shell: bash -l {0}
+        run: |
+          bamAlignCleaner --help
+      - name: Check bamAlignCleaner on test data
+        shell: bash -l {0}
+        run: |
+          bamAlignCleaner tests/data/test.bam

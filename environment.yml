@@ -1,0 +1,10 @@
+name: bamAlignCleaner
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - click=8.0.1
+  - pysam=0.16.0.1
+  - python=3.9.6
+  - pip>=18.1
