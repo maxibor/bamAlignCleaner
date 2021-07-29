@@ -16,5 +16,5 @@ setup(
         "click"
     ],
     packages=find_packages(include=["bamaligncleaner"]),
-    entry_points={"console_scripts": ["bamaligncleaner= bamaligncleaner.cli:cli"]},
+    entry_points={"console_scripts": ["bamAlignCleaner= bamaligncleaner.cli:cli"]},
 )
