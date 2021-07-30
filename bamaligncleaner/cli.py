@@ -8,6 +8,14 @@ from bamaligncleaner.main import filter_bam
 @click.version_option(__version__)
 @click.argument("bam", type=click.Path(exists=True))
 @click.option(
+    "-m",
+    "--method",
+    type=click.Choice(['parse', 'index_stat']),
+    default="parse",
+    show_default=True,
+    help="removal method. Try slow if the fast method isn't working",
+)
+@click.option(
     "-o",
     "--output",
     type=click.Path(writable=True, dir_okay=False, file_okay=True),
@@ -15,11 +23,13 @@ from bamaligncleaner.main import filter_bam
     show_default=True,
     help="filtered bam file",
 )
-def cli(bam, output):
+def cli(bam, method, output):
     """
+    bamAlignCleaner: removes unaligned references in BAM alignment file
+
     BAM: BAM alignment file (indexed and sorted)
     """
-    filter_bam(bam, output)
+    filter_bam(bam, method, output)
 
 
 if __name__ == '__main__':
