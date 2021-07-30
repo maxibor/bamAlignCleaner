@@ -36,7 +36,7 @@ def filter_bam(bam, method, output):
         for read in alignment.fetch(ref):
             read.reference_id = i
             outbam.write(read)
-            i+1
+        i+1
     alignment.close()
     print(f"{total_refs - len(present_refs)} references with unaligned reads were removed from index")
     print(f"Output bam file written to: {output}")

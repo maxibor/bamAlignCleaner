@@ -13,7 +13,7 @@ from bamaligncleaner.main import filter_bam
     type=click.Choice(['parse', 'index_stat']),
     default="parse",
     show_default=True,
-    help="removal method. Try slow if the fast method isn't working",
+    help="removal method. Try parse if the index_stat method isn't working",
 )
 @click.option(
     "-o",
