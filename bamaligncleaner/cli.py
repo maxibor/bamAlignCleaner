@@ -25,7 +25,7 @@ from bamaligncleaner.main import filter_bam
 )
 def cli(bam, method, output):
     """\b
-    bamAlignCleaner: removes unaligned references in BAM alignment file
+    bamAlignCleaner: removes unaligned references in BAM/CRAM alignment files
     * Homepage: https://github.com/maxibor/bamAlignCleaner
     * Author: Maxime Borry
 

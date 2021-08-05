@@ -38,7 +38,7 @@ bamAlignCleaner --output output.bam --method parse input.bam
 $ bamAlignCleaner --help
 Usage: bamAlignCleaner [OPTIONS] BAM
 
-  bamAlignCleaner: removes unaligned references in BAM alignment file
+  bamAlignCleaner: removes unaligned references in BAM/CRAM alignment files
   * Homepage: https://github.com/maxibor/bamAlignCleaner
   * Author: Maxime Borry
 
