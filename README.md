@@ -6,12 +6,13 @@ A simple utility tool to remove references with no aligned reads in a `bam`/`cra
 
 ## Installation
 
-With pip 
+* with pip 
+
 ```bash
 pip install bamAlignCleaner 
 ```
 
-With conda
+* with conda
 
 ```bash
 conda install -c bioconda -c conda-forge -c maxibor bamAlignCleaner
@@ -19,6 +20,35 @@ conda install -c bioconda -c conda-forge -c maxibor bamAlignCleaner
 
 ## Usage
 
+* Quick start
+
 ```bash
-bamAlignCleaner -o output.bam input.bam
+bamAlignCleaner input.bam
+```
+
+* Advanced
+
+```bash
+bamAlignCleaner --output output.bam --method parse input.bam
+```
+
+## Help
+
+```bash
+$ bamAlignCleaner --help
+Usage: bamAlignCleaner [OPTIONS] BAM
+
+  bamAlignCleaner: removes unaligned references in BAM alignment file
+  * Homepage: https://github.com/maxibor/bamAlignCleaner
+  * Author: Maxime Borry
+
+  BAM: BAM alignment file (indexed and sorted)
+
+Options:
+  --version                       Show the version and exit.
+  -m, --method [parse|index_stat]
+                                  unaligned reference removal method
+                                  [default: parse]
+  -o, --output FILE               filtered bam file [default: STDOUT]
+  --help                          Show this message and exit.
 ```

@@ -14,19 +14,20 @@ from bamaligncleaner.main import filter_bam
     type=click.Choice(["parse", "index_stat"]),
     default="parse",
     show_default=True,
-    help="removal method. Try parse if the index_stat method isn't working",
+    help="unaligned reference removal method",
 )
 @click.option(
     "-o",
     "--output",
     type=click.Path(writable=True, dir_okay=False, file_okay=True),
     default="-",
-    show_default=True,
-    help="filtered bam file. Default to STDOUT",
+    help="filtered bam file [default: STDOUT]",
 )
 def cli(bam, method, output):
-    """
+    """\b
     bamAlignCleaner: removes unaligned references in BAM alignment file
+    * Homepage: https://github.com/maxibor/bamAlignCleaner
+    * Author: Maxime Borry
 
     BAM: BAM alignment file (indexed and sorted)
     """
