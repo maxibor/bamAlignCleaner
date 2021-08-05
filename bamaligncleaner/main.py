@@ -1,6 +1,24 @@
 import pysam
 import logging
 from tqdm import tqdm
+import sys
+
+
+def bam_index(alignment, filetype):
+    """Index bam file
+    Args:
+        alignment(str): Path to alignment file
+        filetype(str): Type of alignment file
+    Returns:
+        str: path to index file
+    """
+    basename = ".".join(alignment.split(".")[:-1])
+    if filetype == "bam":
+        pysam.index(alignment)
+        return f"{basename}.bam.bai"
+    elif filetype == "cram":
+        pysam.index(alignment)
+        return f"{basename}.bam.crai"
 
 
 def filter_bam(bam, method, output):
@@ -13,9 +31,22 @@ def filter_bam(bam, method, output):
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    mode = {"sam": "r", "bam": "rb", "cram": "rc"}
-    filetype = bam.split(".")[-1]
-    alignment = pysam.AlignmentFile(bam, mode[filetype])
+    mode = {"bam": "rb", "cram": "rc"}
+    if bam == "-":
+        filetype = "bam"
+    else:
+        filetype = bam.split(".")[-1]
+    try:
+        alignment = pysam.AlignmentFile(bam, mode[filetype])
+        alignment.check_index()
+    except ValueError:
+        logging.warning(f"[WARNING]: Indexing {bam}")
+        index = bam_index(bam, filetype)
+        alignment = pysam.AlignmentFile(bam, mode[filetype], index_filename=index)
+    except KeyError:
+        logging.error(f"[ERROR]: .{filetype} is not a valid filetype")
+        sys.exit(1)
+
     total_refs = alignment.nreferences
     present_refs = set()
     logging.info("Step 1/4: reading alignment file")
