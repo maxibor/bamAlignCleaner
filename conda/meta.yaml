@@ -20,6 +20,7 @@ requirements:
   run:
     - python
     - click >=7.0
+    - tqdm
     - bioconda::pysam >=0.15.2
     
 test:

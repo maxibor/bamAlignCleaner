@@ -34,4 +34,5 @@ jobs:
       - name: Check bamAlignCleaner on test data
         shell: bash -l {0}
         run: |
-          bamAlignCleaner tests/data/test.bam
+          bamAlignCleaner -o test.bam tests/data/test.bam
+          bamAlignCleaner -m index_stat -o test.bam tests/data/test.bam
