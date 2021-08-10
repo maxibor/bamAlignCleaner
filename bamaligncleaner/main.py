@@ -2,6 +2,7 @@ import pysam
 import logging
 from tqdm import tqdm
 import sys
+from pysam.utils import SamtoolsError
 
 
 def bam_index(alignment, filetype):
@@ -13,12 +14,19 @@ def bam_index(alignment, filetype):
         str: path to index file
     """
     basename = ".".join(alignment.split(".")[:-1])
-    if filetype == "bam":
-        pysam.index(alignment)
-        return f"{basename}.bam.bai"
-    elif filetype == "cram":
-        pysam.index(alignment)
-        return f"{basename}.bam.crai"
+    try:
+        if filetype == "bam":
+            pysam.index(alignment)
+            return f"{basename}.bam.bai"
+        elif filetype == "cram":
+            pysam.index(alignment)
+            return f"{basename}.bam.crai"
+    except (ValueError, SamtoolsError) as e:
+        logging.error(f"[ERROR]: {e}")
+        logging.error(
+            f"[ERROR]: An error occured while attempting to index {alignment}. Is it sorted ?"
+        )
+        sys.exit(1)
 
 
 def filter_bam(bam, method, output):
