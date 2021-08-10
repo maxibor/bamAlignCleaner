@@ -42,7 +42,7 @@ Usage: bamAlignCleaner [OPTIONS] BAM
   * Homepage: https://github.com/maxibor/bamAlignCleaner
   * Author: Maxime Borry
 
-  BAM: BAM alignment file (indexed and sorted)
+  BAM: BAM alignment file (sorted, and optionally indexed)
 
 Options:
   --version                       Show the version and exit.
@@ -52,3 +52,10 @@ Options:
   -o, --output FILE               filtered bam file [default: STDOUT]
   --help                          Show this message and exit.
 ```
+
+## Methods
+
+bamAlignCleaner uses either one of the two following methods to remove references not having reads mapped against them.
+
+* The `parse` method goes through each read of the alignment file and keeps the references if the read maps to it. *This method should be faster if you have more references than reads.*
+* The `check_index` checks index for the number of mapped reads to each reference. *This method should be faster if you have more reads than references.*
