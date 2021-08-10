@@ -29,7 +29,7 @@ def cli(bam, method, output):
     * Homepage: https://github.com/maxibor/bamAlignCleaner
     * Author: Maxime Borry
 
-    BAM: BAM alignment file (indexed and sorted)
+    BAM: BAM alignment file (sorted, and optionally indexed)
     """
     filter_bam(bam, method, output)
 
