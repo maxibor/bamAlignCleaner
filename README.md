@@ -1,4 +1,4 @@
-[![bamAlignCleaner-CI](https://github.com/maxibor/bamAlignCleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/maxibor/bamAlignCleaner/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/bamAlignCleaner?color=green&label=Install%20with%20pip)](https://pypi.org/project/bamAlignCleaner/) [![Anaconda-Server Badge](https://anaconda.org/maxibor/bamaligncleaner/badges/installer/conda.svg)](https://anaconda.org/maxibor/bamaligncleaner)
+[![bamAlignCleaner-CI](https://github.com/maxibor/bamAlignCleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/maxibor/bamAlignCleaner/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/bamAlignCleaner?color=green&label=Install%20with%20pip)](https://pypi.org/project/bamAlignCleaner/) [![](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](https://anaconda.org/bioconda/bamAlignCleaner)
 
 # bamAlignCleaner
 
@@ -15,7 +15,7 @@ pip install bamAlignCleaner
 * with conda
 
 ```bash
-conda install -c bioconda -c conda-forge -c maxibor bamAlignCleaner
+conda install -c bioconda bamAlignCleaner
 ```
 
 ## Usage
