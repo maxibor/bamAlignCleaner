@@ -1,4 +1,6 @@
-[![bamAlignCleaner-CI](https://github.com/maxibor/bamAlignCleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/maxibor/bamAlignCleaner/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/bamAlignCleaner?color=green&label=Install%20with%20pip)](https://pypi.org/project/bamAlignCleaner/) [![](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](https://anaconda.org/bioconda/bamAlignCleaner)
+[![bamAlignCleaner-CI](https://github.com/maxibor/bamAlignCleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/maxibor/bamAlignCleaner/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/bamAlignCleaner?color=green&label=Install%20with%20pip)](https://pypi.org/project/bamAlignCleaner/) [![](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](https://anaconda.org/bioconda/bamAlignCleaner) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6344904.svg)](https://doi.org/10.5281/zenodo.6344904)
+
+
 
 # bamAlignCleaner
 
@@ -59,3 +61,18 @@ bamAlignCleaner uses either one of the two following methods to remove reference
 
 * The `parse` method goes through each read of the alignment file and keeps the references if the read maps to it. *This method should be faster if you have more references than reads.*
 * The `check_index` checks index for the number of mapped reads to each reference. *This method should be faster if you have more reads than references.*
+
+## Cite
+
+```bibtex
+@software{maxime_borry_2022_6344905,
+  author       = {Maxime Borry},
+  title        = {maxibor/bamAlignCleaner: bamAlignCleaner},
+  month        = mar,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {0.2.2},
+  doi          = {10.5281/zenodo.6344904},
+  url          = {https://doi.org/10.5281/zenodo.6344904}
+}
+```
