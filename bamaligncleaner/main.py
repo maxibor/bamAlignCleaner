@@ -31,7 +31,7 @@ def bam_index(alignment, filetype):
         sys.exit(1)
 
 
-def filter_bam(bam, method, output, splits):
+def filter_bam(bam, method, output, splits, splitmode):
     """Filter bam file to remove unaligned references
 
     Args:
@@ -40,6 +40,8 @@ def filter_bam(bam, method, output, splits):
                       file
         output (str): Path to output alignment file
         splits (int): Number of output alignment files
+        splitmode (str): Method to split the contigs into multiple output
+                         alignment files
     """
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -66,6 +68,7 @@ def filter_bam(bam, method, output, splits):
     logging.info(f"* {alignment.mapped} aligned reads")
     logging.info(f"* {total_refs} reference sequences")
     if method.lower() == "index_stat":
+        n_reads = {}
         for ref_stat in tqdm(
             alignment.get_index_statistics(), total=total_refs, unit="references"
         ):
@@ -73,11 +76,17 @@ def filter_bam(bam, method, output, splits):
             nb_mapped_reads = ref_stat[1]
             if nb_mapped_reads > 0:
                 present_refs.add(refname)
+                n_reads[refname] = nb_mapped_reads
         refs = tuple(present_refs)
     elif method.lower() == "parse":
+        n_reads = {}
         for read in tqdm(alignment.fetch(), total=alignment.mapped, unit="reads"):
             if not read.is_unmapped:
                 present_refs.add(read.reference_name)
+                if read.reference_name not in n_reads:
+                    n_reads[read.reference_name] = 1
+                else:
+                    n_reads[read.reference_name] += 1
         refs = tuple(present_refs)
     reflens = list()
 
@@ -92,7 +101,10 @@ def filter_bam(bam, method, output, splits):
         header = pysam.AlignmentHeader.from_dict(header)
     else:  # split into multiple headers
         header = alignment.header.to_dict()
-        splitted_sqs = split_contigs(header["SQ"], splits)
+        if splitmode == "contigs":
+            splitted_sqs = split_contigs(header["SQ"], splits)
+        else:
+            splitted_sqs = split_reads(header['SQ'], n_reads, splits)
         splits_ref_map = {
             ref['SN']: i
             for i, h in enumerate(splitted_sqs)
@@ -121,7 +133,7 @@ def filter_bam(bam, method, output, splits):
         if output.split(".")[-1] in ['bam', 'cram']:
             outprefix = ".".join(output.split(".")[:-1])
         else:
-            outprefix = bam
+            outprefix = output
         outbam = [pysam.AlignmentFile(f"{outprefix}.{i:02d}.{filetype}",
                                       "wb", header=headers[i])
                   for i in range(splits)]
@@ -146,6 +158,7 @@ def split_contigs(sq, splits):
        a similar total length of contigs
     Args:
         sq(dict): Dictionary of reference contigs
+        splits(int): Number of splits
     Returns:
         list: List of dictionary of reference contigs
     """
@@ -160,3 +173,27 @@ def split_contigs(sq, splits):
     for j, ref in enumerate(sq):
         sq_splits[np.argmax(j < indices)].append(ref)
     return sq_splits
+
+
+def split_reads(sq, ref_stats, splits):
+    """Split header of contigs into multiple dictionary so that every one has
+       a similar number of aligned reads
+    Args:
+        sq(dict): Dictionary of reference contigs
+        ref_stats(dict): Number of aligned reads per contig
+        splits(int): Number of splits
+    Returns:
+        list: List of dictionary of reference contigs
+    """
+    nreads = np.asarray([ref_stats[ref['SN']] for ref in sq])
+    cumsum_nr = np.cumsum(nreads)
+    split_sum = cumsum_nr[-1] // splits
+    cumsum_splits = np.array(range(1, splits+1)) * split_sum
+    indices = np.searchsorted(cumsum_nr, cumsum_splits)
+    sq_splits = []
+    for i in range(splits):
+        sq_splits.append([])
+    for j, ref in enumerate(sq):
+        sq_splits[np.argmax(j < indices)].append(ref)
+    return sq_splits
+

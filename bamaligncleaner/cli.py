@@ -34,7 +34,14 @@ from bamaligncleaner.main import filter_bam
     show_default=True,
     help="the number of bam files to split the bam file to"
 )
-def cli(bam, method, output, splits):
+@click.option(
+    "--splitmode",
+    type=click.Choice(["contigs", "reads"]),
+    default="contigs",
+    show_default=True,
+    help="method to split the bam file into multiple output files"
+)
+def cli(bam, method, output, splits, splitmode):
     """\b
     bamAlignCleaner: removes unaligned references in BAM/CRAM alignment files
     * Homepage: https://github.com/maxibor/bamAlignCleaner
@@ -48,7 +55,7 @@ def cli(bam, method, output, splits):
                       "prefix.")
         sys.exit(1)
 
-    filter_bam(bam, method, output, splits)
+    filter_bam(bam, method, output, splits, splitmode)
 
 
 if __name__ == "__main__":
