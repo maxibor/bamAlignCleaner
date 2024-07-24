@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
+import logging
+import sys
+
 import click
+
 from bamaligncleaner import __version__
 from bamaligncleaner.main import filter_bam
 
@@ -23,15 +27,28 @@ from bamaligncleaner.main import filter_bam
     default="-",
     help="filtered bam file [default: STDOUT]",
 )
-def cli(bam, method, output):
+@click.option(
+    "-s",
+    "--splits",
+    default=1,
+    show_default=True,
+    help="the number of bam files to split the bam file to"
+)
+def cli(bam, method, output, splits):
     """\b
     bamAlignCleaner: removes unaligned references in BAM/CRAM alignment files
     * Homepage: https://github.com/maxibor/bamAlignCleaner
-    * Author: Maxime Borry
+    * Author: Maxime Borry, Alex Hübner
 
     BAM: BAM alignment file (sorted, and optionally indexed)
     """
-    filter_bam(bam, method, output)
+    if splits > 1 and output == "-":
+        logging.error("Splitting the BAM file does not work with writing the "
+                      "filtered data to STDOUT. Please specify an output "
+                      "prefix.")
+        sys.exit(1)
+
+    filter_bam(bam, method, output, splits)
 
 
 if __name__ == "__main__":
