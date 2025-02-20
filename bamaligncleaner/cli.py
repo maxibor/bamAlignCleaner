@@ -49,9 +49,9 @@ def cli(bam, method, output, splits, splitmode):
 
     BAM: BAM alignment file (sorted, and optionally indexed)
     """
-    if splits > 1000:
+    if splits > 100:
         logging.error("It is not supported to split the BAM file into more "
-                      "than 1,000 files.")
+                      "than 100 files.")
         sys.exit(1)
     if splits > 1 and output == "-":
         logging.error("Splitting the BAM file does not work with writing the "
