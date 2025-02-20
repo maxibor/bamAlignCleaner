@@ -25,7 +25,7 @@ from bamaligncleaner.main import filter_bam
     "--output",
     type=click.Path(writable=True, dir_okay=False, file_okay=True),
     default="-",
-    help="filtered bam file [default: STDOUT]",
+    help="filtered bam file [default: STDOUT]. When option --splits > 1, then its the prefix for naming the filtered bam files",
 )
 @click.option(
     "-s",
@@ -49,10 +49,18 @@ def cli(bam, method, output, splits, splitmode):
 
     BAM: BAM alignment file (sorted, and optionally indexed)
     """
+    if splits > 1000:
+        logging.error("It is not supported to split the BAM file into more "
+                      "than 1,000 files.")
+        sys.exit(1)
     if splits > 1 and output == "-":
         logging.error("Splitting the BAM file does not work with writing the "
                       "filtered data to STDOUT. Please specify an output "
                       "prefix.")
+        sys.exit(1)
+    if splits > 1 and method == "index_stat":
+        logging.error("Splitting the BAM file does not work with using the "
+                      "method index_stat. Please specify the method 'parse'.")
         sys.exit(1)
 
     filter_bam(bam, method, output, splits, splitmode)

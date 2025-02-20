@@ -63,11 +63,11 @@ def filter_bam(bam, method, output, splits, splitmode):
         sys.exit(1)
 
     total_refs = alignment.nreferences
-    present_refs = set()
     logging.info("Step 1/4: reading alignment file")
     logging.info(f"* {alignment.mapped} aligned reads")
     logging.info(f"* {total_refs} reference sequences")
     if method.lower() == "index_stat":
+        present_refs = set()
         n_reads = {}
         for ref_stat in tqdm(
             alignment.get_index_statistics(), total=total_refs, unit="references"
@@ -79,14 +79,20 @@ def filter_bam(bam, method, output, splits, splitmode):
                 n_reads[refname] = nb_mapped_reads
         refs = tuple(present_refs)
     elif method.lower() == "parse":
+        observed_refs = {}
         n_reads = {}
         for read in tqdm(alignment.fetch(), total=alignment.mapped, unit="reads"):
             if not read.is_unmapped:
-                present_refs.add(read.reference_name)
+                if read.reference_name not in observed_refs:
+                    observed_refs[read.reference_name] = []
+                if (read.is_paired and
+                    read.next_reference_name not in observed_refs[read.reference_name]):
+                    observed_refs[read.reference_name].append(read.next_reference_name)
                 if read.reference_name not in n_reads:
                     n_reads[read.reference_name] = 1
                 else:
                     n_reads[read.reference_name] += 1
+        present_refs = set(observed_refs.keys())
         refs = tuple(present_refs)
     reflens = list()
 
@@ -112,7 +118,9 @@ def filter_bam(bam, method, output, splits, splitmode):
         }
         headers = [header.copy() for i in range(splits)]
         for i in range(splits):
-            headers[i]['SQ'] = splitted_sqs[i]
+            headers[i]['SQ'] = extend_sqs(splitted_sqs[i],
+                                          observed_refs,
+                                          header['SQ'])
         headers = [pysam.AlignmentHeader.from_dict(h) for h in headers]
 
     logging.info("Step 4/4: Writing alignment file")
@@ -168,7 +176,7 @@ def split_contigs(sq, splits):
     cumsum_splits = np.array(range(1, splits+1)) * split_sum
     indices = np.searchsorted(cumsum_rl, cumsum_splits)
     sq_splits = []
-    for i in range(splits):
+    for _ in range(splits):
         sq_splits.append([])
     for j, ref in enumerate(sq):
         sq_splits[np.argmax(j < indices)].append(ref)
@@ -197,3 +205,29 @@ def split_reads(sq, ref_stats, splits):
         sq_splits[np.argmax(j < indices)].append(ref)
     return sq_splits
 
+
+def extend_sqs(primary_contigs, mateinfo, orig_sq):
+    """Adds to the list of contigs that were a reference for a read the
+       contigs that just appeared in the mates.
+    Args:
+        primary_contigs(list): list of SQ entries in current split
+        metainfo(dict): dictionary listing all contigs to which mates were
+                        aligned to.
+        orig_sq(list): list of all SQ entries from the SAM header
+    Returns:
+        list: list of SQ entries of SAM header
+    """
+    contigs_present = set([c['SN'] for c in primary_contigs])
+    additional_contigs = []
+    for p in primary_contigs:
+        if p['SN'] in mateinfo:
+            for c in mateinfo[p['SN']]:
+                if c not in contigs_present:
+                    if c not in additional_contigs:
+                        additional_contigs.append(c)
+    additional_contigs = set(additional_contigs)
+    contigs = primary_contigs.copy()
+    for c in orig_sq:
+        if c['SN'] in additional_contigs:
+            contigs.append(c)
+    return contigs
