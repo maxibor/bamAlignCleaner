@@ -103,7 +103,10 @@ def filter_bam(bam, method, output, splits, splitmode):
     logging.info("Step 3/4: recreating header")
     if splits == 1:
         header = alignment.header.to_dict()
-        header["SQ"] = [{"SN": r, "LN": rl} for (r, rl) in zip(refs, reflens)]
+        sq = [{"SN": r, "LN": rl} for (r, rl) in zip(refs, reflens)]
+        if method.lower() == "parse": 
+            sq = extend_sqs(sq, observed_refs, header['SQ'])
+        header['SQ'] = sq
         header = pysam.AlignmentHeader.from_dict(header)
     else:  # split into multiple headers
         header = alignment.header.to_dict()
