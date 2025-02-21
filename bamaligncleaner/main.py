@@ -77,7 +77,6 @@ def filter_bam(bam, method, output, splits, splitmode):
             if nb_mapped_reads > 0:
                 present_refs.add(refname)
                 n_reads[refname] = nb_mapped_reads
-        refs = tuple(present_refs)
     elif method.lower() == "parse":
         observed_refs = {}
         n_reads = {}
@@ -93,10 +92,10 @@ def filter_bam(bam, method, output, splits, splitmode):
                 else:
                     n_reads[read.reference_name] += 1
         present_refs = set(observed_refs.keys())
-        refs = tuple(present_refs)
-    reflens = list()
+    refs = tuple(present_refs)
 
     logging.info("Step 2/4: getting references length")
+    reflens = list()
     for ref in tqdm(refs, unit="references"):
         reflens.append(alignment.get_reference_length(ref))
 
@@ -110,10 +109,11 @@ def filter_bam(bam, method, output, splits, splitmode):
         header = pysam.AlignmentHeader.from_dict(header)
     else:  # split into multiple headers
         header = alignment.header.to_dict()
+        sq = [{"SN": r, "LN": rl} for (r, rl) in zip(refs, reflens)]
         if splitmode == "contigs":
-            splitted_sqs = split_contigs(header["SQ"], splits)
+            splitted_sqs = split_contigs(sq, splits)
         else:
-            splitted_sqs = split_reads(header['SQ'], n_reads, splits)
+            splitted_sqs = split_reads(sq, n_reads, splits)
         splits_ref_map = {
             ref['SN']: i
             for i, h in enumerate(splitted_sqs)
