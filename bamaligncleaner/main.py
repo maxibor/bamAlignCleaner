@@ -1,8 +1,10 @@
-import pysam
 import logging
-from tqdm import tqdm
 import sys
+
+import numpy as np
+import pysam
 from pysam.utils import SamtoolsError
+from tqdm import tqdm
 
 
 def bam_index(alignment, filetype):
@@ -28,14 +30,16 @@ def bam_index(alignment, filetype):
         )
         sys.exit(1)
 
+
 def read_reflist(reflist_file):
     reflist = set()
-    with open(reflist_file, 'r') as f:
+    with open(reflist_file, "r") as f:
         for line in f:
             reflist.add(line.strip())
     return reflist
 
-def filter_bam(bam, method, reflist, output):
+
+def filter_bam(bam, method, reflist, output, splits, splitmode):
     """Filter bam file to remove unaligned references
 
     Args:
@@ -43,6 +47,9 @@ def filter_bam(bam, method, reflist, output):
         method(str): unaligned reference removal method
         reflist(str): Path to reflist file
         output (str): Path to output alignment file
+        splits (int): Number of output alignment files
+        splitmode (str): Method to split the contigs into multiple output
+                         alignment files
     """
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -67,11 +74,12 @@ def filter_bam(bam, method, reflist, output):
         sys.exit(1)
 
     total_refs = alignment.nreferences
-    present_refs = set()
     logging.info("Step 1/4: reading alignment file")
     logging.info(f"* {alignment.mapped} aligned reads")
     logging.info(f"* {total_refs} reference sequences")
     if method.lower() == "index_stat":
+        present_refs = set()
+        n_reads = {}
         for ref_stat in tqdm(
             alignment.get_index_statistics(), total=total_refs, unit="references"
         ):
@@ -79,10 +87,25 @@ def filter_bam(bam, method, reflist, output):
             nb_mapped_reads = ref_stat[1]
             if nb_mapped_reads > 0:
                 present_refs.add(refname)
+                n_reads[refname] = nb_mapped_reads
     elif method.lower() == "parse":
+        observed_refs = {}
+        n_reads = {}
         for read in tqdm(alignment.fetch(), total=alignment.mapped, unit="reads"):
             if not read.is_unmapped:
-                present_refs.add(read.reference_name)
+                if read.reference_name not in observed_refs:
+                    observed_refs[read.reference_name] = []
+                if (
+                    read.is_paired
+                    and read.next_reference_name
+                    not in observed_refs[read.reference_name]
+                ):
+                    observed_refs[read.reference_name].append(read.next_reference_name)
+                if read.reference_name not in n_reads:
+                    n_reads[read.reference_name] = 1
+                else:
+                    n_reads[read.reference_name] += 1
+        present_refs = set(observed_refs.keys())
 
     if reflist:
         refs = tuple(reflist.intersection(present_refs))
@@ -94,13 +117,33 @@ def filter_bam(bam, method, reflist, output):
         reflens = list()
         for ref in tqdm(refs, unit="references"):
             reflens.append(alignment.get_reference_length(ref))
+    else:
+        logging.error("No references were found for keeping.")
+        sys.exit(1)
 
-        logging.info("Step 3/4: recreating header")
+    logging.info("Step 3/4: recreating header")
+    if splits == 1:
         header = alignment.header.to_dict()
-        header["SQ"] = [{"SN": r, "LN": rl} for (r, rl) in zip(refs, reflens)]
+        sq = [{"SN": r, "LN": rl} for (r, rl) in zip(refs, reflens)]
+        if method.lower() == "parse":
+            sq = extend_sqs(sq, observed_refs, header["SQ"])
+        header["SQ"] = sq
         header = pysam.AlignmentHeader.from_dict(header)
+    else:  # split into multiple headers
+        header = alignment.header.to_dict()
+        sq = [{"SN": r, "LN": rl} for (r, rl) in zip(refs, reflens)]
+        if splitmode == "contigs":
+            splitted_sqs = split_contigs(sq, splits)
+        else:
+            splitted_sqs = split_reads(sq, n_reads, splits)
+        splits_ref_map = {ref["SN"]: i for i, h in enumerate(splitted_sqs) for ref in h}
+        headers = [header.copy() for i in range(splits)]
+        for i in range(splits):
+            headers[i]["SQ"] = extend_sqs(splitted_sqs[i], observed_refs, header["SQ"])
+        headers = [pysam.AlignmentHeader.from_dict(h) for h in headers]
 
-        logging.info("Step 4/4: Writing alignment file")
+    logging.info("Step 4/4: Writing alignment file")
+    if splits == 1:
         outbam = pysam.AlignmentFile(output, "wb", header=header)
         for ref in tqdm(refs, unit="references"):
             for read in alignment.fetch(ref):
@@ -113,9 +156,101 @@ def filter_bam(bam, method, reflist, output):
             output_message = "STDOUT"
         else:
             output_message = output
-        logging.info(
-            f"* {total_refs - len(present_refs)} references with unaligned reads were removed from index"
-        )
-        logging.info(f"* Output bam file written to: {output_message}")
-    else:
-        logging.info("No reference left in alignment file after filtering")
+    else:  # Split in multiple BAM files
+        if output.split(".")[-1] in ["bam", "cram"]:
+            outprefix = ".".join(output.split(".")[:-1])
+        else:
+            outprefix = output
+        outbam = [
+            pysam.AlignmentFile(
+                f"{outprefix}.{i:02d}.{filetype}", "wb", header=headers[i]
+            )
+            for i in range(splits)
+        ]
+        for ref in tqdm(refs, unit="references"):
+            for read in alignment.fetch(ref):
+                read_dict = read.to_dict()
+                read_out = pysam.AlignedSegment.from_dict(
+                    read_dict, headers[splits_ref_map[ref]]
+                )
+                outbam[splits_ref_map[ref]].write(read_out)
+        alignment.close()
+        for i in range(splits):
+            outbam[i].close()
+        output_message = output
+    logging.info(
+        f"* {total_refs - len(present_refs)} references with unaligned reads were removed from index"
+    )
+    logging.info(f"* Output bam file written to: {output_message}")
+
+
+def split_contigs(sq, splits):
+    """Split header of contigs into multiple dictionary so that every one has
+       a similar total length of contigs
+    Args:
+        sq(dict): Dictionary of reference contigs
+        splits(int): Number of splits
+    Returns:
+        list: List of dictionary of reference contigs
+    """
+    reflens = np.asarray([ref["LN"] for ref in sq])
+    cumsum_rl = np.cumsum(reflens)
+    split_sum = cumsum_rl[-1] // splits
+    cumsum_splits = np.array(range(1, splits + 1)) * split_sum
+    indices = np.searchsorted(cumsum_rl, cumsum_splits)
+    sq_splits = []
+    for _ in range(splits):
+        sq_splits.append([])
+    for j, ref in enumerate(sq):
+        sq_splits[np.argmax(j < indices)].append(ref)
+    return sq_splits
+
+
+def split_reads(sq, ref_stats, splits):
+    """Split header of contigs into multiple dictionary so that every one has
+       a similar number of aligned reads
+    Args:
+        sq(dict): Dictionary of reference contigs
+        ref_stats(dict): Number of aligned reads per contig
+        splits(int): Number of splits
+    Returns:
+        list: List of dictionary of reference contigs
+    """
+    nreads = np.asarray([ref_stats[ref["SN"]] for ref in sq])
+    cumsum_nr = np.cumsum(nreads)
+    split_sum = cumsum_nr[-1] // splits
+    cumsum_splits = np.array(range(1, splits + 1)) * split_sum
+    indices = np.searchsorted(cumsum_nr, cumsum_splits)
+    sq_splits = []
+    for i in range(splits):
+        sq_splits.append([])
+    for j, ref in enumerate(sq):
+        sq_splits[np.argmax(j < indices)].append(ref)
+    return sq_splits
+
+
+def extend_sqs(primary_contigs, mateinfo, orig_sq):
+    """Adds to the list of contigs that were a reference for a read the
+       contigs that just appeared in the mates.
+    Args:
+        primary_contigs(list): list of SQ entries in current split
+        metainfo(dict): dictionary listing all contigs to which mates were
+                        aligned to.
+        orig_sq(list): list of all SQ entries from the SAM header
+    Returns:
+        list: list of SQ entries of SAM header
+    """
+    contigs_present = set([c["SN"] for c in primary_contigs])
+    additional_contigs = []
+    for p in primary_contigs:
+        if p["SN"] in mateinfo:
+            for c in mateinfo[p["SN"]]:
+                if c not in contigs_present:
+                    if c not in additional_contigs:
+                        additional_contigs.append(c)
+    additional_contigs = set(additional_contigs)
+    contigs = primary_contigs.copy()
+    for c in orig_sq:
+        if c["SN"] in additional_contigs:
+            contigs.append(c)
+    return contigs
