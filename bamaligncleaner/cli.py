@@ -38,15 +38,14 @@ from bamaligncleaner.main import filter_bam
     "--splits",
     default=1,
     show_default=True,
-    help="the number of bam files to split the bam file to"
+    help="the number of bam files to split the bam file to",
 )
-<<<<<<< HEAD
 @click.option(
     "--splitmode",
     type=click.Choice(["contigs", "reads"]),
     default="contigs",
     show_default=True,
-    help="method to split the bam file into multiple output files"
+    help="method to split the bam file into multiple output files",
 )
 def cli(bam, method, reflist, output, splits, splitmode):
     """\b
@@ -57,17 +56,22 @@ def cli(bam, method, reflist, output, splits, splitmode):
     BAM: BAM alignment file (sorted, and optionally indexed)
     """
     if splits > 100:
-        logging.error("It is not supported to split the BAM file into more "
-                      "than 100 files.")
+        logging.error(
+            "It is not supported to split the BAM file into more " "than 100 files."
+        )
         sys.exit(1)
     if splits > 1 and output == "-":
-        logging.error("Splitting the BAM file does not work with writing the "
-                      "filtered data to STDOUT. Please specify an output "
-                      "prefix.")
+        logging.error(
+            "Splitting the BAM file does not work with writing the "
+            "filtered data to STDOUT. Please specify an output "
+            "prefix."
+        )
         sys.exit(1)
     if splits > 1 and method == "index_stat":
-        logging.error("Splitting the BAM file does not work with using the "
-                      "method index_stat. Please specify the method 'parse'.")
+        logging.error(
+            "Splitting the BAM file does not work with using the "
+            "method index_stat. Please specify the method 'parse'."
+        )
         sys.exit(1)
 
     filter_bam(bam, method, reflist, output, splits, splitmode)
