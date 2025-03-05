@@ -115,6 +115,8 @@ def filter_bam(bam, method, reflist, output, splits, splitmode):
         for ref in tqdm(refs, unit="references"):
             reflens.append(alignment.get_reference_length(ref))
     else:
+        logging.error("No references were found for keeping.")
+        sys.exit(1)
 
     logging.info("Step 3/4: recreating header")
     if splits == 1:
