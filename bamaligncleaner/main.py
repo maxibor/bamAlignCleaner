@@ -30,14 +30,20 @@ def bam_index(alignment, filetype):
         )
         sys.exit(1)
 
+def read_reflist(reflist_file):
+    reflist = set()
+    with open(reflist_file, 'r') as f:
+        for line in f:
+            reflist.add(line.strip())
+    return reflist
 
-def filter_bam(bam, method, output, splits, splitmode):
+def filter_bam(bam, method, reflist, output, splits, splitmode):
     """Filter bam file to remove unaligned references
 
     Args:
         bam (str): Path to alignement file
-        method (str): Method to infer references present in the input alignment
-                      file
+        method(str): unaligned reference removal method
+        reflist(str): Path to reflist file
         output (str): Path to output alignment file
         splits (int): Number of output alignment files
         splitmode (str): Method to split the contigs into multiple output
@@ -45,6 +51,9 @@ def filter_bam(bam, method, output, splits, splitmode):
     """
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    if reflist:
+        reflist = read_reflist(reflist)
 
     mode = {"bam": "rb", "cram": "rc"}
     if bam == "-":
@@ -93,11 +102,19 @@ def filter_bam(bam, method, output, splits, splitmode):
                     n_reads[read.reference_name] += 1
         present_refs = set(observed_refs.keys())
     refs = tuple(present_refs)
+                present_refs.add(read.reference_name)
 
-    logging.info("Step 2/4: getting references length")
-    reflens = list()
-    for ref in tqdm(refs, unit="references"):
-        reflens.append(alignment.get_reference_length(ref))
+    if reflist:
+        refs = tuple(reflist.intersection(present_refs))
+    else:
+        refs = tuple(present_refs)
+
+    if len(refs) > 0:
+        logging.info("Step 2/4: getting references length")
+        reflens = list()
+        for ref in tqdm(refs, unit="references"):
+            reflens.append(alignment.get_reference_length(ref))
+    else:
 
     logging.info("Step 3/4: recreating header")
     if splits == 1:

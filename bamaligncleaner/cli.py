@@ -21,6 +21,12 @@ from bamaligncleaner.main import filter_bam
     help="unaligned reference removal method",
 )
 @click.option(
+    "-r",
+    "--reflist",
+    type=click.Path(exists=True),
+    help="File listing references to keep in output bam",
+)
+@click.option(
     "-o",
     "--output",
     type=click.Path(writable=True, dir_okay=False, file_okay=True),
@@ -34,6 +40,7 @@ from bamaligncleaner.main import filter_bam
     show_default=True,
     help="the number of bam files to split the bam file to"
 )
+<<<<<<< HEAD
 @click.option(
     "--splitmode",
     type=click.Choice(["contigs", "reads"]),
@@ -41,7 +48,7 @@ from bamaligncleaner.main import filter_bam
     show_default=True,
     help="method to split the bam file into multiple output files"
 )
-def cli(bam, method, output, splits, splitmode):
+def cli(bam, method, reflist, output, splits, splitmode):
     """\b
     bamAlignCleaner: removes unaligned references in BAM/CRAM alignment files
     * Homepage: https://github.com/maxibor/bamAlignCleaner
@@ -63,7 +70,7 @@ def cli(bam, method, output, splits, splitmode):
                       "method index_stat. Please specify the method 'parse'.")
         sys.exit(1)
 
-    filter_bam(bam, method, output, splits, splitmode)
+    filter_bam(bam, method, reflist, output, splits, splitmode)
 
 
 if __name__ == "__main__":
