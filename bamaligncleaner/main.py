@@ -35,20 +35,34 @@ def read_reflist(reflist_file):
             reflist.add(line.strip())
     return reflist
 
-def filter_bam(bam, method, reflist, output):
+def read_fasta(ref_fasta):
+    reflist = set()
+    with pysam.FastxFile(ref_fasta) as fh:
+        for entry in fh:
+            reflist.add(entry.name)
+    return reflist
+
+def filter_bam(bam, method, reflist, ref_fasta, output):
     """Filter bam file to remove unaligned references
 
     Args:
         bam (str): Path to alignement file
         method(str): unaligned reference removal method
         reflist(str): Path to reflist file
+        ref_fasta(str): Path to reference fasta file
         output (str): Path to output alignment file
     """
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
+    if reflist and ref_fasta:
+        raise ValueError(f"Can't use both --reflist and --ref_fasta together")
+
     if reflist:
         reflist = read_reflist(reflist)
+    if ref_fasta:
+        reflist = read_fasta(ref_fasta)
+    
 
     mode = {"bam": "rb", "cram": "rc"}
     if bam == "-":

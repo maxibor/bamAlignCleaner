@@ -23,13 +23,19 @@ from bamaligncleaner.main import filter_bam
     help="File listing references to keep in output bam",
 )
 @click.option(
+    "-f",
+    "--ref_fasta",
+    type=click.Path(exists=True),
+    help="Fasta file of reference sequences to keep in output bam",
+)
+@click.option(
     "-o",
     "--output",
     type=click.Path(writable=True, dir_okay=False, file_okay=True),
     default="-",
     help="filtered bam file [default: STDOUT]",
 )
-def cli(bam, method, reflist, output):
+def cli(bam, method, reflist, ref_fasta, output):
     """\b
     bamAlignCleaner: removes unaligned references in BAM/CRAM alignment files
     * Homepage: https://github.com/maxibor/bamAlignCleaner
@@ -37,7 +43,7 @@ def cli(bam, method, reflist, output):
 
     BAM: BAM alignment file (sorted, and optionally indexed)
     """
-    filter_bam(bam, method, reflist, output)
+    filter_bam(bam, method, reflist, ref_fasta, output)
 
 
 if __name__ == "__main__":
