@@ -51,6 +51,10 @@ Options:
   -m, --method [parse|index_stat]
                                   unaligned reference removal method
                                   [default: parse]
+  -r, --reflist PATH              File listing references to keep in output
+                                  bam
+  -f, --ref_fasta PATH            Fasta file of reference sequences to keep in
+                                  output bam
   -o, --output FILE               filtered bam file [default: STDOUT]
   --help                          Show this message and exit.
 ```
